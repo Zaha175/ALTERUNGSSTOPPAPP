@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alterungsstopp App</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0;
+        }
+        .questions,
+        .answers {
+            flex: 1;
+        }
+        .questions {
+            padding: 0;
+            margin-right: 20px;
+        }
+        .questions-list {
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn-custom {
+            font-weight: bold;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+            margin-top: 5px;
+            width: 100%;
+            background-color: #1A3A7A; /* Dunkel dunkelblau */
+            color: white;
+        }
+        .btn-custom.active {
+            background-color: #d9a600;
+            color: white;
+        }
+        .answers {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            position: fixed;
+            top: 10%;
+            left: 50%;
+            transform: translate(-50%, -10%);
+            z-index: 1000;
+            width: 60%;
+            max-height: 70vh;
+            overflow-y: auto;
+            display: none;
+        }
+        .floating-buttons {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .dark-mode {
+            background-color: #1e1e1e;
+            color: white;
+        }
+        .dark-mode .questions-list { background-color: #333; }
+        .dark-mode .btn-custom { background-color: #1A3A7A; color: white; }
+        .dark-mode .btn-custom.active { background-color: #d9a600; }
+        .dark-mode .answers { background-color: #444; color: white; }
+        .search-bar {
+            margin-bottom: 10px;
+        }
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .mode-toggle.sun {
+            color: #FFD700; /* Gold for sun */
+        }
+        .mode-toggle.moon {
+            color: #C0C0C0; /* Silver for moon */
+        }
+    </style>
+</head>
+<body class="dark-mode">
+    <button class="mode-toggle sun" onclick="toggleDarkMode()">☀️</button>
+    <main class="container">
+        <div class="questions">
+          <!--  <select id="filterDropdown" class="form-control mb-3" onchange="filterQuestions()">
+                <option value="all">ALLE</option>
+                <option value="genomische-instabilitaet">GENOMISCHE INSTABILITÄT</option>
+                <option value="video">MIT VIDEO</option>
+                <option value="image">MIT BILD</option>
+            </select> -->
+            <div class="questions-list" id="questionsList"></div>
+        </div>
+        <div class="answers" id="answerBox">
+            <button class="btn btn-danger mb-2" onclick="closeAnswer()">SCHLIEßEN</button>
+            <div id="answerContent"></div>
+        </div>
+    </main>
+    <script>
+        const qa_data = [
+            {
+                "question": "Genomische Instabilität: Grundlagen",
+                "answer": `
+                    <p>Die Integrität des Genoms wird durch äußere Stressoren und Fehler bei der DNA-Replikation bedroht.</p>
+                    <p>Mit zunehmendem Alter nehmen die DNA-Reparaturmechanismen ab, was zu einer Anhäufung von Schäden und gestörter Zellfunktion führt.</p>
+                    <p>Größere Nukleoli können die rDNA-Reparatur behindern und so die Genomstabilität negativ beeinflussen.</p>
+                `
+            },
+            {
+                "question": "Gesunde Ernährung",
+                "answer": `
+                    <p>Eine antioxidantienreiche Ernährung schützt vor oxidativem Stress und DNA-Schäden.</p>
+                    <p>Eine ausgewogene Nährstoffzufuhr unterstützt die Zellgesundheit und reguliert den Stoffwechsel.</p>
+                    <p>Kalorienrestriktion kann den Alterungsprozess verlangsamen und die Gesundheit fördern.</p>
+                    <p>Eine reduzierte Aufnahme bestimmter Aminosäuren kann positive Effekte auf das Altern haben.</p>
+                `
+            },
+            {
+                "question": "Regelmäßige Bewegung",
+                "answer": `
+                    <p>Hochintensives Intervalltraining (HIIT) erhöht die Anzahl der Mitochondrien und verlangsamt die Zellalterung.</p>
+                    <p>Bewegung aktiviert die Autophagie und reguliert reaktive Sauerstoffspezies (ROS).</p>
+                    <p>Sie kann zur DNA-Reparatur beitragen, genaue Mechanismen sind jedoch noch nicht vollständig geklärt.</p>
+                `
+            },
+            {
+                "question": "Medikamente",
+                "answer": `
+                    <p><strong>Metformin:</strong> Hemmt die Glukoseneubildung in der Leber und wird als lebensverlängerndes Medikament erforscht (TAME-Studie).</p>
+                    <p><strong>Rapamycin:</strong> Hemmt den TOR-Signalweg, aktiviert die Autophagie und kann den Alterungsprozess verlangsamen.</p>
+                    <p><strong>Senolytika:</strong> Lösen gezielt den Zelltod in alternden (seneszenten) Zellen aus und reduzieren deren schädliche Auswirkungen.</p>
+                `
+            },
+     {
+    "question": "Welche vielversprechenden Medikamente werden in der Anti-Aging-Forschung untersucht?",
+    "answer": `
+        <p>In der Anti-Aging-Forschung werden folgende Medikamente untersucht:</p>
+        <ul>
+            <li><strong>Rapamycin:</strong>
+                <ul>
+                    <li>Hemmt den TOR-Signalweg, was die Autophagie aktiviert.</li>
+                    <li>Kann die Lebensspanne von Versuchstieren verlängern.</li>
+                    <li>Wirkung kann geschlechts- und genotypabhängig sein.</li>
+                    <li>Eine kurze Einnahme kann die gleiche Wirkung wie eine lebenslange Behandlung haben.</li>
+                </ul>
+            </li>
+            <li><strong>Metformin:</strong>
+                <ul>
+                    <li>Wird zur Behandlung von Diabetes eingesetzt.</li>
+                    <li>Hemmt die Neubildung von Glukose in der Leber.</li>
+                    <li>Kann die Lebensdauer von Mäusen verlängern.</li>
+                    <li>Wird in der TAME-Studie auf seine Anti-Aging-Wirkung beim Menschen untersucht.</li>
+                    <li>Beeinflusst den Stoffwechsel und erhöht die Produktion von ROS.</li>
+                </ul>
+            </li>
+            <li><strong>Senolytika:</strong>
+                <ul>
+                    <li>Töten gezielt seneszente Zellen ab.</li>
+                    <li>Tanespimycin ist ein Beispiel, zeigt aber schwere Nebenwirkungen.</li>
+                    <li>Können die Lebensdauer verlängern, aber auch die Sterblichkeitsrate beschleunigen.</li>
+                </ul>
+            </li>
+        </ul>
+        <p>Diese Medikamente sind vielversprechend, aber ihre Eignung für den Menschen und ihre Wirksamkeit als Anti-Aging-Mittel werden noch erforscht. Andere Ansätze wie Kalorienrestriktion, Bewegung und gesunde Ernährung werden ebenfalls untersucht.</p>
+    `
+},
+
+       {
+                "question": "Zusätzliche Aspekte",
+                "answer": `
+                    <p><strong>Nukleolusgröße:</strong> Kleinere Nukleoli fördern die Genomstabilität, während größere Nukleoli den Alterungsprozess beschleunigen. Kalorienrestriktion kann die Nukleolusgröße positiv beeinflussen.</p>
+                    <p><strong>TOR-Signalweg:</strong> Zentraler Regulator des Zellstoffwechsels. Seine Hemmung durch Rapamycin aktiviert die Autophagie.</p>
+                `
+            },
+     {
+    "question": "Welche Rolle spielen Ernährung und Bewegung beim Altern?",
+    "answer": `
+        <p><strong>Ernährung:</strong></p>
+        <ul>
+            <li>Eine Kalorienrestriktion kann die Lebensdauer verlängern und die Zellalterung verlangsamen, indem sie zu kleineren Nukleoli führt und die rDNA stabilisiert.</li>
+            <li>Es kommt weniger auf die Menge als auf die Art der Nährstoffe an. Eine proteinreiche Ernährung kann die Lebensdauer verkürzen, während eine reduzierte Aufnahme bestimmter Aminosäuren positive Effekte haben kann.</li>
+            <li>Die Darmflora beeinflusst den Alterungsprozess.</li>
+            <li>Eine reduzierte Nahrungsaufnahme aktiviert die Autophagie, einen zellulären Recyclingmechanismus.</li>
+        </ul>
+        <p><strong>Bewegung:</strong></p>
+        <ul>
+            <li>Regelmäßige Bewegung, insbesondere hochintensives Intervalltraining (HIIT), kann die Zellalterung verlangsamen und die Anzahl der Mitochondrien erhöhen.</li>
+            <li>Bewegung kann die Autophagie aktivieren.</li>
+            <li>Bewegung kann die DNA-Reparatur unterstützen.</li>
+            <li>Bewegung kann die Lebenserwartung erhöhen.</li>
+        </ul>
+        <p><strong>Zusammenhang:</strong></p>
+        <ul>
+            <li>Ernährung und Bewegung sind Haupteinflüsse auf die Geschwindigkeit des Alterns.</li>
+            <li>Beide beeinflussen den TOR-Signalweg und die Mitochondrien, welche wichtige Rollen im Alterungsprozess spielen.</li>
+            <li>Beide können den Energiestatus der Zelle beeinflussen.</li>
+            <li>Eine ausgewogene Ernährung und regelmäßige Bewegung können den Alterungsprozess verlangsamen, die Gesundheit im Alter verbessern und die Lebenserwartung erhöhen.</li>
+        </ul>
+    `
+},
+
+      {
+        "question": "Welche Struktur im Zellkern wird als 'Sterblichkeitstimer' für Zellen betrachtet?",
+        "answer": `
+            <p>Der Nukleolus.</p>
+        `
+    },
+  {
+    "question": "Wie beeinflusst die Nukleolusgröße den Alterungsprozess?",
+    "answer": `
+        <p>Die Nukleolusgröße beeinflusst den Alterungsprozess wie folgt:</p>
+        <ul>
+            <li><strong>Kleinere Nukleoli:</strong> Verlangsamen das Altern, indem sie die rDNA stabilisieren und dadurch die Genomstabilität fördern.</li>
+            <li><strong>Größere Nukleoli:</strong> Beschleunigen den Zelltod, da sie zu Genominstabilität führen und die rDNA-Reparatur stören.</li>
+        </ul>
+        <p><strong>Zusätzlich:</strong></p>
+        <ul>
+            <li>Mit dem Alter entwickeln Zellen größere Nukleoli.</li>
+            <li>Eine <strong>Kalorienrestriktion</strong> kann zu kleineren Nukleoli führen.</li>
+            <li>Die Expansion des Nukleolus erreicht einen Punkt, nach dem die Zelle schnell verfällt, da große Nukleoli schädliche Proteine nicht mehr ausschließen können.</li>
+        </ul>
+    `
+},
+
+  {
+        "question": "Wie beeinflusst die Größe des Nukleolus den Alterungsprozess?",
+        "answer": `
+            <p>Kleinere Nukleoli verlangsamen das Altern, während größere Nukleoli den Zelltod beschleunigen.</p>
+        `
+    },
+ {
+    "question": "Welche Rolle spielt die Nukleolusgröße beim Altern?",
+    "answer": `
+        <p>Die Größe des Nukleolus spielt eine entscheidende Rolle beim Altern von Zellen. Der Nukleolus ist eine dichte Struktur im Zellkern, die ribosomale DNA (rDNA) beherbergt. Studien zeigen, dass die Nukleolusgröße als eine Art <strong>'Sterblichkeits-Timer'</strong> für Zellen fungiert.</p>
+        <ul>
+            <li><strong>Kleinere Nukleoli:</strong> Verlangsamen das Altern, indem sie die rDNA stabilisieren. Eine Stabilisierung der rDNA trägt zur Genomstabilität bei.</li>
+            <li><strong>Größere Nukleoli:</strong>
+                <ul>
+                    <li>Beschleunigen den Zelltod, da sie zu Genominstabilität führen.</li>
+                    <li>Stören die rDNA-Reparatur, was zu Instabilität führt.</li>
+                    <li>Verlieren die Fähigkeit, schädliche Proteine auszuschließen, was zu weiterer Genominstabilität führen kann.</li>
+                </ul>
+            </li>
+        </ul>
+        <p><strong>Weitere wichtige Aspekte:</strong></p>
+        <ul>
+            <li><strong>rDNA:</strong> Der Nukleolus beherbergt die rDNA, die für die Ribosomenproduktion unerlässlich ist. Die repetitive Struktur der rDNA macht sie anfällig für Schäden.</li>
+            <li><strong>Alterung:</strong> Mit zunehmendem Alter entwickeln Zellen größere Nukleoli, was die rDNA-Reparatur stört und die Instabilität erhöht.</li>
+            <li><strong>Wendepunkt:</strong> Die Expansion des Nukleolus erreicht einen Wendepunkt, nach dem die Zellen rasch verfallen. Nach Überschreiten dieser Schwelle besteht die Zelle durchschnittlich nur noch für etwa fünf weitere Teilungen.</li>
+            <li><strong>Kalorienrestriktion:</strong> Eine bekannte Anti-Aging-Strategie ist die Kalorienrestriktion, die zu kleineren Nukleoli führt und den Zellverfall verzögert.</li>
+            <li><strong>Verankerung der rDNA:</strong> Forscher haben diesen Effekt bei Hefe reproduziert, indem sie rDNA an der Kernmembran verankert haben, was die Lebensdauer verlängert und die Größe des Nukleolus als Schlüsselfaktor für das Altern bestätigt.</li>
+        </ul>
+        <p>Die Forschung zielt darauf ab, Therapien zu entwickeln, die die Lebensdauer von Stammzellen verlängern und die allgemeine Gesundheitsspanne verbessern, indem sie diese Mechanismen gezielt beeinflussen. Es wurde festgestellt, dass die Verbindung der Nukleolusstruktur mit dem DNA-Reparaturprozess von Hefe bis zum Menschen erhalten ist.</p>
+        <p>Es ist wichtig zu erwähnen, dass der Nukleolus nur ein Teil des komplexen Puzzles des Alterns ist und dass andere Faktoren wie die Mitochondrienfunktion, die Telomerverkürzung und epigenetische Veränderungen ebenfalls eine Rolle spielen. Veränderungen in der Nukleolusgröße können die Proteinsynthese, den Energiestoffwechsel und Stressreaktionen beeinflussen.</p>
+    `
+},
+
+   {
+        "question": "Welche Ernährungsstrategie kann das Altern bei Tieren verlangsamen?",
+        "answer": `
+            <p>Eine reduzierte Nahrungsaufnahme (Kalorienrestriktion).</p>
+        `
+    },
+    {
+        "question": "Welche Art von Ernährung kann die Lebensdauer verkürzen?",
+        "answer": `
+            <p>Eine proteinreiche Ernährung.</p>
+        `
+    },
+  {
+    "question": "Wie wirkt sich Kalorienrestriktion auf den Alterungsprozess aus?",
+    "answer": `
+        <p>Kalorienrestriktion verlangsamt den Alterungsprozess durch verschiedene Mechanismen:</p>
+        <ul>
+            <li><strong>Nukleolusgröße:</strong> Sie führt zu kleineren Nukleoli, was die rDNA stabilisiert und die Genomstabilität fördert. Größere Nukleoli hingegen beschleunigen den Zelltod.</li>
+            <li><strong>Autophagie:</strong> Kalorienrestriktion aktiviert die Autophagie, den zellulären Recyclingprozess.</li>
+            <li><strong>Stoffwechsel:</strong> Sie verändert den Fettstoffwechsel und kann epigenetische Veränderungen bewirken, die sich auf das Altern auswirken.</li>
+            <li><strong>TOR-Signalweg:</strong> Kalorienrestriktion beeinflusst den TOR-Signalweg, der die Autophagie reguliert.</li>
+            <li><strong>Mitochondrien:</strong> Kalorienrestriktion kann den Energiestatus der Zelle beeinflussen und somit den TOR-Signalweg und die Autophagie.</li>
+            <li><strong>Aminosäuren:</strong> Es scheint wichtiger, welche Nährstoffe man zu sich nimmt als die Menge. Eine Reduzierung bestimmter Aminosäuren kann positive Effekte haben.</li>
+        </ul>
+        <p>Studien zeigen, dass Kalorienrestriktion bei Tieren die Lebensspanne verlängern und die Alterung verlangsamen kann. Auch beim Menschen wurden positive Auswirkungen auf die Alterungsgeschwindigkeit beobachtet. Allerdings ist die Umsetzung der Kalorienrestriktion eine Herausforderung, und eine Gewichtsabnahme während der Kalorienrestriktion kann sich negativ auf die Lebensdauer auswirken.</p>
+    `
+},
+
+  {
+        "question": "Welche Rolle spielen Darmbakterien im Alterungsprozess?",
+        "answer": `
+            <p>Die Zusammensetzung der Darmflora beeinflusst die Gesundheit und den Alterungsprozess. Jüngere Darmbakterien können die Lebensdauer verlängern.</p>
+        `
+    },
+   {
+    "question": "Jüngere Darmbakterien können die Lebensdauer verlängern. Wie kann man das erreichen?",
+    "answer": `
+        <p>Eine Verjüngung der Darmflora kann durch verschiedene Ansätze erreicht werden, um die Lebensdauer zu verlängern:</p>
+        <ul>
+            <li><strong>Übertragung von Darmbakterien:</strong>
+                <ul>
+                    <li>Die Übertragung von Darmbakterien junger auf ältere Lebewesen kann die Lebensdauer verlängern.</li>
+                    <li>Dies wurde bei Fischen gezeigt, ist aber für den Menschen noch nicht erforscht.</li>
+                </ul>
+            </li>
+            <li><strong>Ernährung:</strong>
+                <ul>
+                    <li>Eine ausgewogene Ernährung ist entscheidend.</li>
+                    <li>Proteinreiche Ernährung kann den Alterungsprozess beschleunigen.</li>
+                    <li>Eine reduzierte Aufnahme bestimmter Aminosäuren kann positive Effekte haben.</li>
+                    <li>Eine ballaststoffreiche Ernährung fördert die Vielfalt der Darmbakterien.</li>
+                </ul>
+            </li>
+            <li><strong>Prä- und Probiotika:</strong>
+                <ul>
+                    <li>Die Einnahme von Präbiotika und Probiotika kann die Darmflora positiv beeinflussen.</li>
+                </ul>
+            </li>
+            <li><strong>Vermeidung schädlicher Einflüsse:</strong>
+                <ul>
+                    <li>Der Konsum von Zucker, verarbeiteten Lebensmitteln und Alkohol sollte eingeschränkt werden.</li>
+                </ul>
+            </li>
+        </ul>
+        <p>Mit zunehmendem Alter nimmt die Vielfalt der Darmbakterien ab und krankheitserregende Bakterien nehmen zu. Die Verjüngung der Darmflora könnte diesen Prozess umkehren. Die Forschung hierzu ist jedoch noch nicht abgeschlossen.</p>
+    `
+},
+
+{
+    "question": "Eine reduzierte Aufnahme bestimmter Aminosäuren kann positive Effekte haben. Welche sind diese bestimmten Aminosäuren?",
+    "answer": `
+        <p>Eine reduzierte Aufnahme von <strong>verzweigtkettigen Aminosäuren (BCAAs)</strong> kann die Stoffwechselgesundheit verbessern. Dies wird durch Studien belegt, die zeigen, dass eine geringere Proteinzufuhr und eine gezielte Reduktion bestimmter Aminosäuren, insbesondere verzweigtkettige, positive Auswirkungen haben können.</p>
+        <ul>
+            <li>Es geht nicht nur um die Reduktion der Gesamtmenge an Aminosäuren, sondern auch um das <strong>Verhältnis und die Art der aufgenommenen Aminosäuren</strong>.</li>
+            <li>Eine weniger proteinreiche Ernährung kann potenziell <strong>lebensverlängernd</strong> wirken.</li>
+            <li>Studien mit Taufliegen haben gezeigt, dass eine hohe Proteinzufuhr zu einem <strong>früheren Tod</strong> führt, während eine ausgewogene Ernährung die <strong>Lebensspanne verlängern</strong> kann.</li>
+        </ul>
+        <p>Die Forschung deutet darauf hin, dass eine gezielte Reduzierung von BCAAs wie <strong>Leucin, Isoleucin und Valin</strong> besonders vorteilhaft für die Gesundheit und das Altern sein könnte.</p>
+    `
+},
+
+ {
+        "question": "Was ist Autophagie?",
+        "answer": `
+            <p>Ein zellulärer Recycling-Mechanismus, der mit dem Alter abnimmt.</p>
+        `
+    },
+    {
+        "question": "Wie hängt der TOR-Signalweg mit der Autophagie zusammen?",
+        "answer": `
+            <p>Die Deaktivierung des TOR-Signalwegs aktiviert die Autophagie.</p>
+        `
+    },
+    {
+        "question": "Welche Rolle spielen Mitochondrien im Alterungsprozess?",
+        "answer": `
+            <p>Sie sind die 'Kraftwerke' der Zelle, produzieren Energie und reaktive Sauerstoffspezies (ROS).</p>
+        `
+    },
+    {
+        "question": "Welche Wirkstoffe werden als potenzielle Anti-Aging-Medikamente untersucht?",
+        "answer": `
+            <p>Rapamycin, Metformin und Senolytika.</p>
+        `
+    },
+    {
+        "question": "Was sind die 'Hallmarks of Aging'?",
+        "answer": `
+            <p>Die wichtigsten Merkmale des Alterns, darunter genomische Instabilität, Telomerverkürzung, epigenetische Veränderungen, Abnahme der Autophagie, Proteostaseverlust, Deregulierung von Nährstoffmesssystemen, mitochondriale Dysfunktion, zelluläre Seneszenz, und Veränderungen der interzellulären Kommunikation.</p>
+        `
+    },
+    {
+        "question": "Welche Rolle spielen Telomere im Alterungsprozess?",
+        "answer": `
+            <p>Mit jeder Zellteilung verkürzen sich Telomere, was zu genomischer Instabilität und Zellalterung führt.</p>
+        `
+    },
+    {
+        "question": "Was ist zelluläre Seneszenz?",
+        "answer": `
+            <p>Ein Zustand, in dem Zellen sich nicht mehr teilen und schädliche Moleküle freisetzen, die Entzündungen verursachen können.</p>
+        `
+    },
+    {
+        "question": "Wie kann regelmäßige Bewegung die Zellalterung beeinflussen?",
+        "answer": `
+            <p>Sie kann die Zellalterung verlangsamen, besonders hochintensives Intervalltraining (HIIT) und Ausdauertraining.</p>
+        `
+    },
+    {
+        "question": "Welche Auswirkungen hat Kalorienrestriktion auf das biologische Alter?",
+        "answer": `
+            <p>Sie kann den Alterungsprozess verlangsamen.</p>
+        `
+    },
+    {
+        "question": "Was bewirkt das Medikament Rapamycin im Körper?",
+        "answer": `
+            <p>Es hemmt den TOR-Signalweg und aktiviert die Autophagie.</p>
+        `
+    },
+    {
+        "question": "Welche Auswirkung hat Metformin im Bezug auf das Altern?",
+        "answer": `
+            <p>Es hat möglicherweise lebensverlängernde Effekte, wird aber noch erforscht.</p>
+        `
+    },
+    {
+        "question": "Was sind Senolytika und wie wirken sie?",
+        "answer": `
+            <p>Substanzen, die gezielt seneszente Zellen abtöten.</p>
+        `
+    },
+    {
+        "question": "Was ist intermittierendes Fasten?",
+        "answer": `
+            <p>Eine Ernährungsstrategie, die Fastenperioden mit Essensperioden kombiniert, was positive Auswirkungen auf die Gesundheit haben kann.</p>
+        `
+    },
+    {
+        "question": "Welchen Einfluss hat ein höheres Bildungsniveau auf das Altern?",
+        "answer": `
+            <p>Es kann zu langsamerem Altern und einer längeren Lebensdauer beitragen.</p>
+        `
+    },
+    {
+        "question": "Was ist die TAME-Studie?",
+        "answer": `
+            <p>Eine Studie, die untersucht, ob Metformin den Alterungsprozess beim Menschen verlangsamen kann.</p>
+        `
+    }
+
+
+        ];
+
+        function createButtons(data) {
+            const questionsList = document.getElementById('questionsList');
+            questionsList.innerHTML = '';
+            data.forEach((item, index) => {
+                const button = document.createElement('button');
+                button.classList.add('btn', 'btn-custom');
+                button.textContent = item.question;
+                button.onclick = () => showAnswer(item, index);
+                questionsList.appendChild(button);
+            });
+        }
+
+        function showAnswer(item, buttonIndex) {
+            const answerBox = document.getElementById('answerBox');
+            const answerContent = document.getElementById('answerContent');
+            answerContent.innerHTML = item.answer;
+            answerBox.style.display = 'block';
+
+            // Setze alle Buttons zurück und markiere den ausgewählten Button
+            document.querySelectorAll('.btn-custom').forEach(btn => btn.classList.remove('active'));
+            const activeButton = document.querySelectorAll('.btn-custom')[buttonIndex];
+            if (activeButton) {
+                activeButton.classList.add('active');
+            }
+        }
+
+        function closeAnswer() {
+            const answerBox = document.getElementById('answerBox');
+            answerBox.style.display = 'none';
+        }
+
+      /*  function filterQuestions() {
+            const filter = document.getElementById('filterDropdown').value;
+            const filteredData = qa_data.filter(item => {
+                if (filter === 'all') return true;
+                if (filter === 'genomische-instabilitaet') return item.category === 'genomische-instabilitaet';
+                if (filter === 'video') return item.answer.includes('<iframe');
+                if (filter === 'image') return item.answer.includes('<img');
+                return true;
+            });
+            createButtons(filteredData);
+        } */
+
+        function toggleDarkMode() {
+            const body = document.body;
+            const toggleButton = document.querySelector('.mode-toggle');
+            body.classList.toggle('dark-mode');
+            if (body.classList.contains('dark-mode')) {
+                toggleButton.classList.remove('sun');
+                toggleButton.classList.add('moon');
+                toggleButton.innerHTML = '🌙';
+            } else {
+                toggleButton.classList.remove('moon');
+                toggleButton.classList.add('sun');
+                toggleButton.innerHTML = '☀️';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => createButtons(qa_data));
+    </script>
+</body>
+</html>
